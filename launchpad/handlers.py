@@ -46,6 +46,9 @@ class ProxyHandler(tornado.web.RequestHandler):
                 # 'accept-encoding', 'accept-language', 'accept', 'cache-control',
                 incoming_headers[k] = v
 
+        for k,v in incoming_headers:
+            print("Incoming Headers {} : {}".format(k, v))
+
         body = None
         if self.request.method == 'POST':
             body = self.request.body

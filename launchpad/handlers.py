@@ -60,7 +60,14 @@ class ProxyHandler(tornado.web.RequestHandler):
         retries = 0
 
         while not response and retries < MAX_RETRIES:
-            response = await client.fetch(req, raise_error=False)
+            try:
+                response = await client.fetch(req, raise_error=False)
+            except tornado.httpclient.HTTPError as e:
+                print("Tornado raised exception : {}".format(e))
+                response = None
+                retries += 1
+                await tornado.gen.sleep(0.3)
+
             if response.error:
                 print(" **** response.error")
                 print(response.error)

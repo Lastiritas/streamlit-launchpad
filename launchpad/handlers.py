@@ -41,7 +41,7 @@ class ProxyHandler(tornado.web.RequestHandler):
         incoming_headers = {}
 
         for k,v in self.request.headers.items():
-            if not k.lower() in ['host', 'pragma', 'upgrade-insecure-requests',
+            if not k.lower() in ['host', 'pragma', 'upgrade-insecure-requests', 'if-none-match',
                                  'sec-fetch-user', 'sec-fetch-site', 'sec-fetch-mode', 'accept-encoding']:
                 # 'accept-encoding', 'accept-language', 'accept', 'cache-control',
                 incoming_headers[k] = v

@@ -52,60 +52,42 @@ class ProxyHandler(RequestHandler):
         if self.request.method == 'POST':
             body = self.request.body
 
-        req = HTTPRequest(url, headers=incoming_headers, method=self.request.method, body=body)
-        client = AsyncHTTPClient()
+        http_request = HTTPRequest(url, headers=incoming_headers, method=self.request.method, body=body)
 
         response = None
-        retries = 0
+        response = await self.fetch(http_request)
 
-        while not response and retries < MAX_RETRIES:
-            try:
-                response = await client.fetch(req)
-            except HTTPError as e:
-                print("Tornado raised exception : {}".format(e))
-                response = None
-                retries += 1
-                await tornado.gen.sleep(0.3)
-
-            if response.error:
-                print(" **** response.error")
-                print(response.error)
-                if response.code == 599: # Maybe server wasn't yet ready
-                    print(" **** response.error 599 ***")
-                    response = None
-                    retries += 1
-                    await tornado.gen.sleep(0.1)
-
-        if not response:
-            self.set_status(404)
+        self.set_status(response.code if response else 404)
+        if not response or response.code != 200:
+            print("Exiting as response is null or status code other than 200 %s" % response)
             self.finish()
             return
 
         if debug:
             print(incoming_headers)
-
             print(response)
-
+            print(response.body)
             print(response.headers)
-
             print(response.code)
 
-        self.set_status(response.code)
-        if response.code != 200:
-            self.finish()
-        else:
-            if response.body:
-                if debug:
-                    print("response body")
-                for header, v in response.headers.get_all():
-                    if header.lower() == 'content-length':
-                        self.set_header(header, str(max(len(response.body), int(v))))
-                    else:
-                        self.set_header(header, v)
+        if response.body:
+            for header, v in response.headers.get_all():
+                if header.lower() == 'content-length':
+                    self.set_header(header, str(max(len(response.body), int(v))))
+                else:
+                    self.set_header(header, v)
 
-            self.write(response.body)
+        self.write(response.body)
+        self.finish()
 
-            self.finish()
+    async def fetch(self, http_request):
+        http_client = AsyncHTTPClient()
+        try:
+            print("Fetching url: %s" % http_request.url)
+            return await http_client.fetch(http_request)
+        except Exception as e:
+            print("Exception raised: %s" % e)
+            return None
 
 
 class ProxyWSHandler(WebSocketHandler):

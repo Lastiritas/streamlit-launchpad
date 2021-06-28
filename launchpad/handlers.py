@@ -60,7 +60,7 @@ class ProxyHandler(RequestHandler):
 
         while not response and retries < MAX_RETRIES:
             try:
-                response = await client.fetch(req, raise_error=False)
+                response = await client.fetch(req)
             except HTTPError as e:
                 print("Tornado raised exception : {}".format(e))
                 response = None

@@ -1,4 +1,4 @@
-import setuptools
+from setuptools import setup, find_packages
 
 
 with open("README.md", "r") as fh:
@@ -10,7 +10,7 @@ with open('requirements.txt', 'r') as f:
 li_req = content.split('\n')
 install_requires = [e.strip() for e in li_req if len(e)]
 
-setuptools.setup(
+setup(
     name="streamlit-launchpad",
     version="0.0.11",
     author="Dan Lester",
@@ -19,7 +19,7 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/ideonate/streamlit-launchpad",
-    packages=setuptools.find_packages(),
+    packages=find_packages(),
     install_requires=install_requires,
     include_package_data=True,
     zip_safe=False,

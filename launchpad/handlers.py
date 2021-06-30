@@ -1,15 +1,14 @@
 import tornado
-import tornado.web
-import tornado.websocket
-import tornado.httpclient
 import tornado.gen
+from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
+from tornado.web import RequestHandler
+from tornado.websocket import WebSocketHandler, websocket_connect
 
-tornado.httpclient.AsyncHTTPClient.configure(None, defaults={'decompress_response': False})
+AsyncHTTPClient.configure(None, defaults={'decompress_response': False})
 
 MAX_RETRIES = 100
 
-
-class ProxyHandler(tornado.web.RequestHandler):
+class ProxyHandler(RequestHandler):
     def initialize(self, proxy_url='/', **kwargs):
         super(ProxyHandler, self).initialize(**kwargs)
         self.proxy_url = proxy_url
@@ -53,8 +52,8 @@ class ProxyHandler(tornado.web.RequestHandler):
         if self.request.method == 'POST':
             body = self.request.body
 
-        req = tornado.httpclient.HTTPRequest(url, headers=incoming_headers, method=self.request.method, body=body)
-        client = tornado.httpclient.AsyncHTTPClient()
+        req = HTTPRequest(url, headers=incoming_headers, method=self.request.method, body=body)
+        client = AsyncHTTPClient()
 
         response = None
         retries = 0
@@ -62,7 +61,7 @@ class ProxyHandler(tornado.web.RequestHandler):
         while not response and retries < MAX_RETRIES:
             try:
                 response = await client.fetch(req, raise_error=False)
-            except tornado.httpclient.HTTPError as e:
+            except HTTPError as e:
                 print("Tornado raised exception : {}".format(e))
                 response = None
                 retries += 1
@@ -109,7 +108,7 @@ class ProxyHandler(tornado.web.RequestHandler):
             self.finish()
 
 
-class ProxyWSHandler(tornado.websocket.WebSocketHandler):
+class ProxyWSHandler(WebSocketHandler):
     def initialize(self, proxy_url='/', **kwargs):
         super(ProxyWSHandler, self).initialize(**kwargs)
         self.proxy_url = proxy_url
@@ -139,8 +138,7 @@ class ProxyWSHandler(tornado.websocket.WebSocketHandler):
             url = 'ws' + url[4:]
 
         print("WEBSOCKET OPENING ON "+url)
-        self.ws = await tornado.websocket.websocket_connect(url,
-                                                            on_message_callback=write)
+        self.ws = await websocket_connect(url, on_message_callback=write)
 
     async def on_message(self, message):
         if self.ws:

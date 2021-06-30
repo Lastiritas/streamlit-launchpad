@@ -1,7 +1,6 @@
-import tornado.web
+from tornado.web import Application, ReversibleRouter
 
-
-class DynamicApplication(tornado.web.Application):
+class DynamicApplication(Application):
 
     def remove_handlers(self, appname):
 
@@ -11,7 +10,7 @@ class DynamicApplication(tornado.web.Application):
             print(rule)
             print(rule.matcher)
 
-            if isinstance(rule.target, tornado.web.ReversibleRouter):
+            if isinstance(rule.target, ReversibleRouter):
                 print(rule.target.named_rules)
                 if appname+ 'ws' in rule.target.named_rules or appname+ 'http' in rule.target.named_rules:
                     remove_rules_index = i

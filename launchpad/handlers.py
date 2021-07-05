@@ -57,6 +57,11 @@ class ProxyHandler(RequestHandler):
         response = None
         response = await self.fetch(http_request)
 
+        if not response:
+            print("The first attempt to launch the app returned a None response. Retrying again...")
+            await tornado.gen.sleep(0.5)
+            response = await self.fetch(http_request)
+
         self.set_status(response.code if response else 404)
         if not response or response.code != 200:
             print("Exiting as response is null or status code other than 200 %s" % response)

@@ -14,8 +14,8 @@ class RetryClient:
 
         self.http_client = AsyncHTTPClient()
     
-    def fetch(self, http_request):
-        return self._handle_retries(http_request)
+    async def fetch(self, http_request):
+        return await self._handle_retries(http_request)
     
     def _calculate_backoff_time(self, attempt):
         return self.retry_start_timeout * self.retry_factor * attempt

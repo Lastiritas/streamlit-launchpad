@@ -56,7 +56,7 @@ class ProxyHandler(RequestHandler):
             body = self.request.body
 
         http_request = HTTPRequest(url, headers=incoming_headers, method=self.request.method, body=body)
-        response = self.retry_client.fetch(http_request)
+        response = await self.retry_client.fetch(http_request)
 
         self.set_status(response.code if response else 404)
         if not response or response.code != 200:

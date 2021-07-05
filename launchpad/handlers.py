@@ -3,6 +3,7 @@ import tornado.gen
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient, HTTPError
 from tornado.web import RequestHandler
 from tornado.websocket import WebSocketHandler, websocket_connect
+from .retry_client import RetryClient
 
 AsyncHTTPClient.configure(None, defaults={'decompress_response': False})
 
@@ -12,6 +13,7 @@ class ProxyHandler(RequestHandler):
     def initialize(self, proxy_url='/', **kwargs):
         super(ProxyHandler, self).initialize(**kwargs)
         self.proxy_url = proxy_url
+        self.retry_client = RetryClient()
 
     async def post(self, url=None):
         return await self.handle_req(url)
@@ -46,21 +48,15 @@ class ProxyHandler(RequestHandler):
                 incoming_headers[k] = v
 
         for field, possible_values in incoming_headers.items():
-            print("Incoming Headers {} : {}".format(field, possible_values))
+            if field == 'Referer':
+                print("Incoming Headers {} : {}".format(field, possible_values))
 
         body = None
         if self.request.method == 'POST':
             body = self.request.body
 
         http_request = HTTPRequest(url, headers=incoming_headers, method=self.request.method, body=body)
-
-        response = None
-        response = await self.fetch(http_request)
-
-        if not response:
-            print("The first attempt to launch the app returned a None response. Retrying again...")
-            await tornado.gen.sleep(0.5)
-            response = await self.fetch(http_request)
+        response = self.retry_client.fetch(http_request)
 
         self.set_status(response.code if response else 404)
         if not response or response.code != 200:
@@ -84,16 +80,6 @@ class ProxyHandler(RequestHandler):
 
         self.write(response.body)
         self.finish()
-
-    async def fetch(self, http_request):
-        http_client = AsyncHTTPClient()
-        try:
-            print("Fetching url: %s" % http_request.url)
-            return await http_client.fetch(http_request)
-        except Exception as e:
-            print("Exception raised: %s" % e)
-            return None
-
 
 class ProxyWSHandler(WebSocketHandler):
     def initialize(self, proxy_url='/', **kwargs):
